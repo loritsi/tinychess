@@ -36,7 +36,7 @@ PIECES_VALUES = {
     chess.BISHOP: 3,
     chess.ROOK: 5,
     chess.QUEEN: 9,
-    chess.KING: 100,
+    chess.KING: 0,
 }
 
 PIECES_VALUES_INVERSE = {

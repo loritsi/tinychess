@@ -4,6 +4,14 @@ import random
 
 from components.shared import PIECES_VALUES_INVERSE, PIECES_VALUES
 
+white_openings = [
+    "e4", "d4", "Nf3", "c4", "f4", "b3"
+]
+
+black_openings = [
+    "e5", "c5", "e6", "c6", "d5", "g6", "Nf6"
+]
+
 def get_legal_moves(board):
     legal_moves = list(board.legal_moves)
     if not legal_moves:
@@ -30,8 +38,19 @@ def do_move(board):
     if not legal_moves:
         return None
     
+    move_number = board.fullmove_number
+
+    
     me = board.turn
     opponent = not me
+
+    if move_number == 1: # first move
+        if me == chess.WHITE:
+            move = board.parse_san(random.choice(white_openings))
+        else:
+            move = board.parse_san(random.choice(black_openings))
+
+        return move, [(move, 0)]
 
     scored_moves = []
 
@@ -68,7 +87,10 @@ def get_move_goodness(board, move, colour):
             score -= 2500 # worse than losing
 
     if imaginary_board.is_check():
-        score += 8 # a check is good but not better than a queen
+        if is_piece_adequately_defended(imaginary_board, move.to_square, colour):
+            score += 10
+        else:
+            score -= 10 # don't give away a piece like an idiot
     if imaginary_board.is_checkmate():
         score += 5000 # we win immediately
     if imaginary_board.is_stalemate():
@@ -85,7 +107,7 @@ def get_move_goodness(board, move, colour):
             score -= (PIECES_VALUES[promoted_piece_type] + PIECES_VALUES[chess.PAWN]) # we lose the piece and the pawn in a sense
 
     if board.is_capture(move):
-        if imaginary_board.is_en_passant(move):
+        if board.is_en_passant(move):
             captured_piece = chess.PAWN
         else:
             captured_piece = board.piece_at(move.to_square).piece_type
@@ -101,8 +123,21 @@ def get_move_goodness(board, move, colour):
             else:
                 score -= captured_value - capturing_value # we lose a piece
 
+    if is_piece_adequately_defended(imaginary_board, move.to_square, colour):
+        score += 1 # we're moving to a square that is either defended or not attacked
+    else:
+        score -= PIECES_VALUES[imaginary_board.piece_at(move.to_square).piece_type] # we're moving to a square that is attacked and not defended
+
+    if board.piece_at(move.from_square).piece_type == chess.KING:
+        if imaginary_board.is_castling(move):
+            score += 2 # castling is good
+        else:
+            score -= 2 # don't move the king around like an idiot
+
     score -= value_of_pieces_hanging(imaginary_board, colour) # any pieces we hang we might as well be losing
-    score += value_of_opponent_pieces_hanging(imaginary_board, colour) # any pieces they hang we might as well be gaining
+    score += value_of_opponent_pieces_hanging(imaginary_board, colour) // 2 # any pieces they hang we might as well be gaining
+    # i'm halving this because it seems to incentivise just leaving the opponent's pieces hanging and not taking them
+    # (if they take the piece, there is less pieces hanging, so the score is lower)
 
     if moves_into_centre(move):
         score += 2 # controlling the centre is good
@@ -135,7 +170,7 @@ def moves_into_centre(move):
     return False
 
 def do_i_want_stalemate(board, colour):
-    my_pieces = get_pieces(board, colour)
+    my_pieces = get_pieces(board, colour, "type") # get all the piece types i have
 
     i_have_queen = any(piece == chess.QUEEN for piece in my_pieces)
     i_have_rook = any(piece == chess.ROOK for piece in my_pieces)
