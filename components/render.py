@@ -34,6 +34,18 @@ def render_piece(surface, board, square, flip=False):
     surface.blit(piece_image, piece_rect.topleft)
     return surface
 
+def render_legal_moves(surface, moves):
+    for move in moves:
+        square = move.to_square
+        file, rank = chess.square_file(square), chess.square_rank(square)
+        rank = 7 - rank
+
+        square_rect = pygame.Rect(file * 50, rank * 50, 50, 50)
+        legal_surface = pygame.Surface((50, 50), pygame.SRCALPHA)
+        pygame.draw.circle(legal_surface, (0, 255, 0, 50), (25, 25), 20)
+        surface.blit(legal_surface, square_rect.topleft)
+    return surface
+
 def render_board(surface, board, flip=False):
     for square in chess.SQUARES:
         render_piece(surface, board, square)

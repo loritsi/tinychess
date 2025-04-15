@@ -1,14 +1,49 @@
 import chess
+import chess.pgn
 import random
 import pygame
+import datetime
+import os
 
 from components.shared import BOARD, LAYERS, MOUSE
-from components.render import render_board_bg, render_board, render_mouse_highlight, get_captured_surfaces, render_text
+from components.render import render_board_bg, render_board, render_mouse_highlight, get_captured_surfaces, render_text, render_legal_moves
 from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
 from components.game.engine import do_move
 
 pygame.init()
+
+check_sound = pygame.mixer.Sound("sound/move-check.mp3")
+move_opponent_sound = pygame.mixer.Sound("sound/move-opponent.mp3")
+move_self_sound = pygame.mixer.Sound("sound/move-self.mp3")
+capture_sound = pygame.mixer.Sound("sound/capture.mp3")
+castle_sound = pygame.mixer.Sound("sound/castle.mp3")
+
+def play_move_sound(board, move, white=True):
+    test_board = board.copy()
+    test_board.push(move)
+    if test_board.is_checkmate():
+        check_sound.play()
+    elif test_board.is_check():
+        check_sound.play()
+    elif board.is_capture(move):
+        capture_sound.play()
+    elif test_board.is_castling(move):
+        castle_sound.play()
+    elif white:
+        move_self_sound.play()
+    else:
+        move_opponent_sound.play()
+
+def save_PGN(board):
+    game = chess.pgn.Game.from_board(board)
+    today = datetime.date.today() # get today's date as a string
+    filename = f"games/{today}.pgn"
+    if not os.path.exists("games"):
+        os.makedirs("games") # create the directory if it doesn't exist
+    with open(filename, "w") as f:
+        print(game, file=f)
+    
 
 screen = pygame.display.set_mode((800, 600))
 MOUSE = pygame.mouse
@@ -26,6 +61,8 @@ LAYERS["pieces"] = pygame.Surface((400, 400), pygame.SRCALPHA)
 
 LAYERS["boardui"] = pygame.Surface((400, 400), pygame.SRCALPHA)
 
+LAYERS["legal_moves"] = pygame.Surface((400, 400), pygame.SRCALPHA)
+
 LAYERS["screenui"] = pygame.Surface((800, 600), pygame.SRCALPHA)
 
 LAYERS["moves_rank"] = pygame.Surface((200, 600), pygame.SRCALPHA)
@@ -34,20 +71,56 @@ BOARD_UNIT = pygame.Surface((400,400), pygame.SRCALPHA)
 
 frame = 0
 game_over = False
-gen_next_move_flag = True
+gen_next_move_flag = False
+sel_square = None
+piece_moves = []
+piece_move_squares = []
+
+mouse1 = False
+clicking = False
+clicked = False
 
 while running:
 
-    if gen_next_move_flag:
-        move, best_moves = do_move(BOARD)
-        to_move = "white" if BOARD.turn == chess.WHITE else "black"
-        if move is not None:
-            LAYERS["moves_rank"].fill((0, 0, 0, 0)) # clear the moves rank surface for new moves
-            moves_str_list = [f"{BOARD.san(best_move[0])}: {best_move[1]}" for best_move in best_moves]
-            print(f"best moves for {to_move}: {', '.join(moves_str_list)}")
-            for i, move_str in enumerate(moves_str_list):
-                render_text(LAYERS["moves_rank"], font, move_str, (0, i * 21))
-            gen_next_move_flag = False
+    game_over, result = get_game_result(BOARD)
+    if game_over:
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    waiting = False
+                    break
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                        waiting = False
+                        break
+                    elif event.key == pygame.K_SPACE:
+                        waiting = False
+                        break
+
+            save_PGN(BOARD)
+            screen.fill((218, 177, 99))
+            text_rect = font.render(result, True, (0, 0, 0)).get_rect(center=(400, 300))
+            screen.blit(font.render(result, True, (0, 0, 0)), text_rect)
+
+            press_space_rect = font.render("press SPACE to continue", True, (0, 0, 0)).get_rect(center=(400, 350))
+            screen.blit(font.render("press SPACE to continue", True, (0, 0, 0)), press_space_rect)
+            pygame.display.flip()
+        BOARD.reset()
+        game_over = False
+        gen_next_move_flag = False
+        continue
+
+    if gen_next_move_flag and gen_next_move_timer == frame:
+        move, bote_moves = do_move(BOARD)
+        if move is None:
+            continue
+        play_move_sound(BOARD, move, BOARD.turn == chess.WHITE)
+        BOARD.push(move)
+        gen_next_move_flag = False
+            
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -58,26 +131,54 @@ while running:
                 running = False
                 break
             elif event.key == pygame.K_SPACE:
+                ...
 
-                game_over, result = get_game_result(BOARD)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                if not clicking:
+                    clicked = True 
+                clicking = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:                       # mouse 1 up
+                mouse1 = False                        # end the click
+                clicking = False
 
-                if not game_over:
-                    try:
-                        fullmove = BOARD.fullmove_number
-                        move_san = BOARD.san(move)
-                        to_move = BOARD.piece_at(move.from_square).color
-                        to_move = "white" if to_move == chess.WHITE else "black"
-                        not_to_move = "black" if to_move == "white" else "white"
+    if clicked:
+        square = get_mouse_square(MOUSE, (100, 100))
+
+        if square is not None:
+            if sel_square is not None and piece_moves:
+                for move in piece_moves:
+                    if move.to_square == square:
+                        play_move_sound(BOARD, move, BOARD.turn == chess.WHITE)
+                        BOARD.push(move)
+                        sel_square = None
+                        piece_moves = []
+                        piece_move_squares = []
                         gen_next_move_flag = True
-                        print(f"[{fullmove}] {to_move}: {move_san}") 
-                    except Exception as e:
-                        print(f"error: {e}")
-                        gen_next_move_flag = True
-                    BOARD.push(move)
+                        gen_next_move_timer = frame + random.randint(30, 120)
+                        break
                 else:
-                    print(f"game over! {result}")
-                    gen_next_move_flag = True  
-                    BOARD.reset()
+                    sel_square = None
+                    piece_moves = []
+                    piece_move_squares = []
+
+            else:
+                piece = BOARD.piece_at(square)
+                if piece and piece.color == BOARD.turn:
+                    sel_square = square
+                    piece_moves = [move for move in BOARD.legal_moves if move.from_square == sel_square]
+                    piece_move_squares = [move.to_square for move in piece_moves]
+                else:
+                    sel_square = None
+                    piece_moves = []
+                    piece_move_squares = []
+        else:
+            sel_square = None
+            piece_moves = []
+            piece_move_squares = []
+
+        clicked = False
 
     BOARD_UNIT.fill((0, 0, 0, 0)) # clear the board unit surface
     BOARD_UNIT.blit(LAYERS["boardbg"], (0, 0))
@@ -95,11 +196,16 @@ while running:
 
     white_captured, black_captured = get_captured_surfaces(BOARD)
 
-
+    LAYERS["legal_moves"].fill((0, 0, 0, 0)) # clear the legal moves surface
+    render_legal_moves(LAYERS["legal_moves"], piece_moves)
+    BOARD_UNIT.blit(LAYERS["legal_moves"], (0, 0))
     
     LAYERS["screenui"].fill((0, 0, 0, 0)) # clear the ui surface
     LAYERS["screenui"].blit(white_captured, (100, 30))
     LAYERS["screenui"].blit(black_captured, (100, 520))
+
+    version_text_rect = font.render("tinychess i1", True, (0, 0, 0)).get_rect(topright=(800, 0))
+    LAYERS["screenui"].blit(font.render("tinychess i1", True, (0, 0, 0)), version_text_rect)
 
     mouse_square = get_mouse_square(MOUSE, (100, 100))
     if mouse_square is not None:

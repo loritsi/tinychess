@@ -25,8 +25,10 @@ def get_pieces(board, colour, mode="piece"):
 
     if mode == "type":
         my_pieces = [board.piece_at(square).piece_type for square in my_squares]
+        return my_pieces
     elif mode == "piece":
         my_pieces = [board.piece_at(square) for square in my_squares]
+        return my_pieces
     elif mode == "square":
         return my_squares
 
@@ -88,7 +90,7 @@ def get_move_goodness(board, move, colour):
 
     if imaginary_board.is_check():
         if is_piece_adequately_defended(imaginary_board, move.to_square, colour):
-            score += 10
+            score += 25
         else:
             score -= 10 # don't give away a piece like an idiot
     if imaginary_board.is_checkmate():
@@ -112,7 +114,7 @@ def get_move_goodness(board, move, colour):
         else:
             captured_piece = board.piece_at(move.to_square).piece_type
         capturing_piece = board.piece_at(move.from_square).piece_type
-        captured_value = PIECES_VALUES[captured_piece]
+        captured_value = round(PIECES_VALUES[captured_piece] * 4) # we get a piece and the opponent loses a piece
         capturing_value = PIECES_VALUES[capturing_piece]
 
         if captured_value > capturing_value:

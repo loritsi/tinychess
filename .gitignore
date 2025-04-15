@@ -1,3 +1,4 @@
 *.pyc
 *.pyc
 /components/game/__pycache__
+/games
