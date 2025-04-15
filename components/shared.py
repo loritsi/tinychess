@@ -1,32 +1,43 @@
 import chess
 import pygame
+import os
+import sys
 
 BOARD = chess.Board()
 
+def resource_path(relative_path):
+    # this works for dev and when using pyinstaller
+    try:
+        base_path = sys._MEIPASS  # pyinstaller sets this
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 PIECE_IMAGES = {
     chess.PAWN: {
-        "white": pygame.image.load("pieces/w_pawn.png"),
-        "black": pygame.image.load("pieces/b_pawn.png"),
+        "white": pygame.image.load(resource_path("pieces/w_pawn.png")),
+        "black": pygame.image.load(resource_path("pieces/b_pawn.png")),
     },
     chess.KNIGHT: {
-        "white": pygame.image.load("pieces/w_knight.png"),
-        "black": pygame.image.load("pieces/b_knight.png"),
+        "white": pygame.image.load(resource_path("pieces/w_knight.png")),
+        "black": pygame.image.load(resource_path("pieces/b_knight.png")),
     },
     chess.BISHOP: {
-        "white": pygame.image.load("pieces/w_bishop.png"),
-        "black": pygame.image.load("pieces/b_bishop.png"),
+        "white": pygame.image.load(resource_path("pieces/w_bishop.png")),
+        "black": pygame.image.load(resource_path("pieces/b_bishop.png")),
     },
     chess.ROOK: {
-        "white": pygame.image.load("pieces/w_rook.png"),
-        "black": pygame.image.load("pieces/b_rook.png"),
+        "white": pygame.image.load(resource_path("pieces/w_rook.png")),
+        "black": pygame.image.load(resource_path("pieces/b_rook.png")),
     },
     chess.QUEEN: {
-        "white": pygame.image.load("pieces/w_queen.png"),
-        "black": pygame.image.load("pieces/b_queen.png"),
+        "white": pygame.image.load(resource_path("pieces/w_queen.png")),
+        "black": pygame.image.load(resource_path("pieces/b_queen.png")),
     },
     chess.KING: {
-        "white": pygame.image.load("pieces/w_king.png"),
-        "black": pygame.image.load("pieces/b_king.png"),
+        "white": pygame.image.load(resource_path("pieces/w_king.png")),
+        "black": pygame.image.load(resource_path("pieces/b_king.png")),
     },
 }
 

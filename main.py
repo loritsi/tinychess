@@ -4,6 +4,7 @@ import random
 import pygame
 import datetime
 import os
+import sys
 
 from components.shared import BOARD, LAYERS, MOUSE
 from components.render import render_board_bg, render_board, render_mouse_highlight, get_captured_surfaces, render_text, render_legal_moves
@@ -11,13 +12,26 @@ from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
 from components.game.engine import do_move
 
+def resource_path(relative_path):
+    # this works for dev and when using pyinstaller
+    try:
+        base_path = sys._MEIPASS  # pyinstaller sets this
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 pygame.init()
 
-check_sound = pygame.mixer.Sound("sound/move-check.mp3")
-move_opponent_sound = pygame.mixer.Sound("sound/move-opponent.mp3")
-move_self_sound = pygame.mixer.Sound("sound/move-self.mp3")
-capture_sound = pygame.mixer.Sound("sound/capture.mp3")
-castle_sound = pygame.mixer.Sound("sound/castle.mp3")
+icon_surf = pygame.image.load(resource_path("pieces/w_king.png"))
+scaled_icon = pygame.transform.scale(icon_surf, (32, 32))
+pygame.display.set_icon(scaled_icon)
+
+check_sound = pygame.mixer.Sound(resource_path("sound/move-check.mp3"))
+move_opponent_sound = pygame.mixer.Sound(resource_path("sound/move-opponent.mp3"))
+move_self_sound = pygame.mixer.Sound(resource_path("sound/move-self.mp3"))
+capture_sound = pygame.mixer.Sound(resource_path("sound/capture.mp3"))
+castle_sound = pygame.mixer.Sound(resource_path("sound/castle.mp3"))
 
 def play_move_sound(board, move, white=True):
     test_board = board.copy()
