@@ -41,12 +41,12 @@ PIECE_IMAGES = {
     },
 }
 
-PIECES_VALUES = {
+PIECES_VALUES = { # adjusted values for ai evaluation
     chess.PAWN: 1,
     chess.KNIGHT: 3,
     chess.BISHOP: 3,
-    chess.ROOK: 5,
-    chess.QUEEN: 9,
+    chess.ROOK: 10,
+    chess.QUEEN: 15,
     chess.KING: 0,
 }
 

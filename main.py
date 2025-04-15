@@ -12,6 +12,8 @@ from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
 from components.game.engine import do_move
 
+VERSION = "i1.2"
+
 def resource_path(relative_path):
     # this works for dev and when using pyinstaller
     try:
@@ -52,6 +54,9 @@ def play_move_sound(board, move, white=True):
 def save_PGN(board):
     game = chess.pgn.Game.from_board(board)
     today = datetime.date.today() # get today's date as a string
+    time = datetime.datetime.now().strftime("%H-%M-%S") # get the current time as a string
+    today = f"{today} {time}" # combine the date and time strings
+    today = today.replace(" ", "_") # replace spaces with underscores
     filename = f"games/{today}.pgn"
     if not os.path.exists("games"):
         os.makedirs("games") # create the directory if it doesn't exist
@@ -114,7 +119,7 @@ while running:
                         waiting = False
                         break
 
-            save_PGN(BOARD)
+
             screen.fill((218, 177, 99))
             text_rect = font.render(result, True, (0, 0, 0)).get_rect(center=(400, 300))
             screen.blit(font.render(result, True, (0, 0, 0)), text_rect)
@@ -122,6 +127,7 @@ while running:
             press_space_rect = font.render("press SPACE to continue", True, (0, 0, 0)).get_rect(center=(400, 350))
             screen.blit(font.render("press SPACE to continue", True, (0, 0, 0)), press_space_rect)
             pygame.display.flip()
+        save_PGN(BOARD)
         BOARD.reset()
         game_over = False
         gen_next_move_flag = False
@@ -218,8 +224,8 @@ while running:
     LAYERS["screenui"].blit(white_captured, (100, 30))
     LAYERS["screenui"].blit(black_captured, (100, 520))
 
-    version_text_rect = font.render("tinychess i1", True, (0, 0, 0)).get_rect(topright=(800, 0))
-    LAYERS["screenui"].blit(font.render("tinychess i1", True, (0, 0, 0)), version_text_rect)
+    version_text_rect = font.render("tinychess i1.1", True, (0, 0, 0)).get_rect(topright=(800, 0))
+    LAYERS["screenui"].blit(font.render("tinychess i1.1", True, (0, 0, 0)), version_text_rect)
 
     mouse_square = get_mouse_square(MOUSE, (100, 100))
     if mouse_square is not None:

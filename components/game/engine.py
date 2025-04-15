@@ -71,11 +71,36 @@ def do_move(board):
     return move, scored_moves
 
     
+def get_position_set(board):
+    moves = board.move_stack
+    
+    positions = set()
+
+    imaginary_board = chess.Board() # start with a new board
+    for move in moves:
+        imaginary_board.push(move)
+        positions.add(imaginary_board.board_fen()) # add the position to the set
+
+    return positions
+
+def position_is_repeat(board, move):
+    position_set = get_position_set(board)
+
+    imaginary_board = board.copy()
+    imaginary_board.push(move) # this is a copy of the board after the move is made
+    position = imaginary_board.board_fen() # get the position after the move
+
+    return position in position_set # check if the position is in the set
+
 def get_move_goodness(board, move, colour):
     score = 0
 
     imaginary_board = board.copy()
     imaginary_board.push(move) # this is a copy of the board after the move is made
+
+    if position_is_repeat(board, move):
+        score -= 2
+    
 
     opponent_check, opponent_checkmate, oppponent_stalemate = can_opponent_end_game(imaginary_board, move, colour)
     if opponent_checkmate:
@@ -90,7 +115,7 @@ def get_move_goodness(board, move, colour):
 
     if imaginary_board.is_check():
         if is_piece_adequately_defended(imaginary_board, move.to_square, colour):
-            score += 25
+            score += 10 # we check the opponent and they can't take the piece
         else:
             score -= 10 # don't give away a piece like an idiot
     if imaginary_board.is_checkmate():
@@ -134,7 +159,7 @@ def get_move_goodness(board, move, colour):
         if imaginary_board.is_castling(move):
             score += 2 # castling is good
         else:
-            score -= 2 # don't move the king around like an idiot
+            score -= 10 # don't move the king around like an idiot
 
     score -= value_of_pieces_hanging(imaginary_board, colour) # any pieces we hang we might as well be losing
     score += value_of_opponent_pieces_hanging(imaginary_board, colour) // 2 # any pieces they hang we might as well be gaining
