@@ -5,6 +5,9 @@ import sys
 
 BOARD = chess.Board()
 
+
+VERSION = "i1.2"
+
 def resource_path(relative_path):
     # this works for dev and when using pyinstaller
     try:
@@ -16,28 +19,28 @@ def resource_path(relative_path):
 
 PIECE_IMAGES = {
     chess.PAWN: {
-        "white": pygame.image.load(resource_path("pieces/w_pawn.png")),
-        "black": pygame.image.load(resource_path("pieces/b_pawn.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_pawn.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_pawn.png")),
     },
     chess.KNIGHT: {
-        "white": pygame.image.load(resource_path("pieces/w_knight.png")),
-        "black": pygame.image.load(resource_path("pieces/b_knight.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_knight.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_knight.png")),
     },
     chess.BISHOP: {
-        "white": pygame.image.load(resource_path("pieces/w_bishop.png")),
-        "black": pygame.image.load(resource_path("pieces/b_bishop.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_bishop.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_bishop.png")),
     },
     chess.ROOK: {
-        "white": pygame.image.load(resource_path("pieces/w_rook.png")),
-        "black": pygame.image.load(resource_path("pieces/b_rook.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_rook.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_rook.png")),
     },
     chess.QUEEN: {
-        "white": pygame.image.load(resource_path("pieces/w_queen.png")),
-        "black": pygame.image.load(resource_path("pieces/b_queen.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_queen.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_queen.png")),
     },
     chess.KING: {
-        "white": pygame.image.load(resource_path("pieces/w_king.png")),
-        "black": pygame.image.load(resource_path("pieces/b_king.png")),
+        "white": pygame.image.load(resource_path("assets/pieces/w_king.png")),
+        "black": pygame.image.load(resource_path("assets/pieces/b_king.png")),
     },
 }
 
@@ -58,6 +61,10 @@ PIECES_VALUES_INVERSE = {
     chess.QUEEN: 1,
     chess.KING: 0,
 }
+
+SCREEN_MODE = "menu"
+
+FLIP_BOARD = None
 
 LAYERS = {}
 

@@ -6,13 +6,12 @@ import datetime
 import os
 import sys
 
-from components.shared import BOARD, LAYERS, MOUSE
+from components.shared import BOARD, LAYERS, MOUSE, SCREEN_MODE, FLIP_BOARD, VERSION
 from components.render import render_board_bg, render_board, render_mouse_highlight, get_captured_surfaces, render_text, render_legal_moves
 from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
 from components.game.engine import do_move
-
-VERSION = "i1.2"
+from components.button import Button
 
 def resource_path(relative_path):
     # this works for dev and when using pyinstaller
@@ -25,15 +24,19 @@ def resource_path(relative_path):
 
 pygame.init()
 
-icon_surf = pygame.image.load(resource_path("pieces/w_king.png"))
+icon_surf = pygame.image.load(resource_path("assets/pieces/w_king.png"))
 scaled_icon = pygame.transform.scale(icon_surf, (32, 32))
 pygame.display.set_icon(scaled_icon)
 
-check_sound = pygame.mixer.Sound(resource_path("sound/move-check.mp3"))
-move_opponent_sound = pygame.mixer.Sound(resource_path("sound/move-opponent.mp3"))
-move_self_sound = pygame.mixer.Sound(resource_path("sound/move-self.mp3"))
-capture_sound = pygame.mixer.Sound(resource_path("sound/capture.mp3"))
-castle_sound = pygame.mixer.Sound(resource_path("sound/castle.mp3"))
+check_sound = pygame.mixer.Sound(resource_path("assets/sound/move-check.mp3"))
+move_opponent_sound = pygame.mixer.Sound(resource_path("assets/sound/move-opponent.mp3"))
+move_self_sound = pygame.mixer.Sound(resource_path("assets/sound/move-self.mp3"))
+capture_sound = pygame.mixer.Sound(resource_path("assets/sound/capture.mp3"))
+castle_sound = pygame.mixer.Sound(resource_path("assets/sound/castle.mp3"))
+
+title_image = pygame.image.load(resource_path("assets/title.png"))
+title_width, title_height = title_image.get_size()
+title_image = pygame.transform.scale(title_image, (title_width * 4, title_height * 4))
 
 def play_move_sound(board, move, white=True):
     test_board = board.copy()
@@ -68,13 +71,12 @@ screen = pygame.display.set_mode((800, 600))
 MOUSE = pygame.mouse
 clock = pygame.time.Clock()
 
-font = pygame.font.Font(None, 36)
+font = pygame.font.Font(resource_path("assets/font/semibold.otf"), 30)
 running = True
 
 pygame.display.set_caption("tinychess")
 
 LAYERS["boardbg"] = pygame.Surface((400, 400), pygame.SRCALPHA)
-render_board_bg(LAYERS["boardbg"]) # this doesn't change so we can just do it once
 
 LAYERS["pieces"] = pygame.Surface((400, 400), pygame.SRCALPHA)
 
@@ -99,49 +101,74 @@ mouse1 = False
 clicking = False
 clicked = False
 
-while running:
+def game_as_white(dummy):
+    global SCREEN_MODE, FLIP_BOARD, clicking, clicked, gen_next_move_flag, gen_next_move_timer
+    gen_next_move_flag = False
+    gen_next_move_timer = 0
+    FLIP_BOARD = False
+    SCREEN_MODE = "game"
+    clicking = False
+    clicked = False
 
-    game_over, result = get_game_result(BOARD)
-    if game_over:
-        waiting = True
-        while waiting:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    waiting = False
-                    break
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                        waiting = False
-                        break
-                    elif event.key == pygame.K_SPACE:
-                        waiting = False
-                        break
+def game_as_black(dummy):
+    global SCREEN_MODE, FLIP_BOARD, gen_next_move_flag, gen_next_move_timer, clicking, clicked
+    FLIP_BOARD = True
+    SCREEN_MODE = "game"
+    gen_next_move_flag = True
+    gen_next_move_timer = frame + random.randint(30, 120)
+    clicking = False
+    clicked = False
 
-
-            screen.fill((218, 177, 99))
-            text_rect = font.render(result, True, (0, 0, 0)).get_rect(center=(400, 300))
-            screen.blit(font.render(result, True, (0, 0, 0)), text_rect)
-
-            press_space_rect = font.render("press SPACE to continue", True, (0, 0, 0)).get_rect(center=(400, 350))
-            screen.blit(font.render("press SPACE to continue", True, (0, 0, 0)), press_space_rect)
-            pygame.display.flip()
+def go_menu(dummy):
+    global SCREEN_MODE, clicking, clicked, game_over
+    SCREEN_MODE = "menu"
+    if BOARD.is_game_over():
         save_PGN(BOARD)
-        BOARD.reset()
-        game_over = False
-        gen_next_move_flag = False
-        continue
+    BOARD.reset()
+    game_over = False
+    clicking = False
+    clicked = False
 
-    if gen_next_move_flag and gen_next_move_timer == frame:
-        move, bote_moves = do_move(BOARD)
-        if move is None:
-            continue
-        play_move_sound(BOARD, move, BOARD.turn == chess.WHITE)
-        BOARD.push(move)
-        gen_next_move_flag = False
-            
+WHITE_BUTTON = Button(
+    text="play game as white",
+    textcolour=(0, 0, 0),
+    window=screen,
+    buttonfont=font,
+    x= screen.get_width()/2 - 200,
+    y= screen.get_height()/2 + 50,
+    function=game_as_white,
+    args=None,
+    width=400,
+    height=50
+)
 
+BLACK_BUTTON = Button(
+    text="play game as black",
+    textcolour=(0, 0, 0),
+    window=screen,
+    buttonfont=font,
+    x= screen.get_width()/2 - 200,
+    y= screen.get_height()/2 + 150,
+    function=game_as_black,
+    args=None,
+    width=400,
+    height=50
+)
+
+MENU_BUTTON = Button(
+    text="back to menu",
+    textcolour=(0, 0, 0),
+    window=screen,
+    buttonfont=font,
+    x= screen.get_width()-300,
+    y= screen.get_height()-50,
+    function=go_menu,
+    args=None,
+    width=300,
+    height=50
+)
+
+while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -150,8 +177,9 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 running = False
                 break
-            elif event.key == pygame.K_SPACE:
-                ...
+            elif event.key == pygame.K_b:
+                FLIP_BOARD = not FLIP_BOARD
+                print(f"{FLIP_BOARD}")
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -163,8 +191,53 @@ while running:
                 mouse1 = False                        # end the click
                 clicking = False
 
-    if clicked:
-        square = get_mouse_square(MOUSE, (100, 100))
+
+    if SCREEN_MODE == "menu":
+        screen.fill((218, 177, 99))
+
+        big_king = pygame.transform.scale(icon_surf, (64, 64))
+        big_king_rect = big_king.get_rect(center=(400, 100))
+        screen.blit(big_king, big_king_rect)
+
+        title_image_rect = title_image.get_rect(center=(400, 200))
+        screen.blit(title_image, title_image_rect)
+
+        text_rect = font.render(f"version {VERSION}", True, (0, 0, 0)).get_rect(center=(400, 300))
+        screen.blit(font.render(f"version {VERSION}", True, (0, 0, 0)), text_rect)
+        
+        WHITE_BUTTON.tick(MOUSE.get_pos(), clicking)
+        WHITE_BUTTON.render()
+
+        BLACK_BUTTON.tick(MOUSE.get_pos(), clicking)
+        BLACK_BUTTON.render()
+        
+        pygame.display.flip()
+        continue
+
+    if SCREEN_MODE == "game_over": # forces only checking for menu button when game is over
+        MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
+        clicked = False
+        clicking = False
+
+    game_over, result = get_game_result(BOARD)
+    if game_over:
+        MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
+        clicked = False
+        clicking = False
+
+
+    if gen_next_move_flag and gen_next_move_timer == frame and not game_over:
+        move, bote_moves = do_move(BOARD)
+        if move is None:
+            continue
+        play_move_sound(BOARD, move, BOARD.turn == chess.WHITE)
+        BOARD.push(move)
+        gen_next_move_flag = False
+            
+
+
+    if clicked and not game_over:
+        square = get_mouse_square(MOUSE, (100, 100), flip=FLIP_BOARD)
 
         if square is not None:
             if sel_square is not None and piece_moves:
@@ -199,35 +272,37 @@ while running:
             piece_move_squares = []
 
         clicked = False
+    
+    render_board_bg(LAYERS["boardbg"], FLIP_BOARD)
 
     BOARD_UNIT.fill((0, 0, 0, 0)) # clear the board unit surface
     BOARD_UNIT.blit(LAYERS["boardbg"], (0, 0))
 
     LAYERS["pieces"].fill((0, 0, 0, 0)) 
-    render_board(LAYERS["pieces"], BOARD)
+    render_board(LAYERS["pieces"], BOARD, FLIP_BOARD)
     BOARD_UNIT.blit(LAYERS["pieces"], (0, 0))
 
     screen.fill((218, 177, 99))
-    pygame.draw.rect(screen, (0, 0, 0), (80, 80, 440, 440), 0)
+    pygame.draw.rect(screen, (0, 0, 0), (80, 80, 440, 440), 0, border_radius=10)
 
     LAYERS["boardui"].fill((0, 0, 0, 0)) # clear the ui surface
-    render_mouse_highlight(LAYERS["boardui"], MOUSE, (100, 100))
+    render_mouse_highlight(LAYERS["boardui"], MOUSE, flip=FLIP_BOARD, board_pos=(100, 100))
     BOARD_UNIT.blit(LAYERS["boardui"], (0, 0))
 
-    white_captured, black_captured = get_captured_surfaces(BOARD)
+    white_captured, black_captured = get_captured_surfaces(BOARD, FLIP_BOARD)
 
     LAYERS["legal_moves"].fill((0, 0, 0, 0)) # clear the legal moves surface
-    render_legal_moves(LAYERS["legal_moves"], piece_moves)
+    render_legal_moves(LAYERS["legal_moves"], piece_moves, FLIP_BOARD)
     BOARD_UNIT.blit(LAYERS["legal_moves"], (0, 0))
     
     LAYERS["screenui"].fill((0, 0, 0, 0)) # clear the ui surface
     LAYERS["screenui"].blit(white_captured, (100, 30))
     LAYERS["screenui"].blit(black_captured, (100, 520))
 
-    version_text_rect = font.render("tinychess i1.1", True, (0, 0, 0)).get_rect(topright=(800, 0))
-    LAYERS["screenui"].blit(font.render("tinychess i1.1", True, (0, 0, 0)), version_text_rect)
+    version_text_rect = font.render(f"tinychess {VERSION}", True, (0, 0, 0)).get_rect(topright=(800, 0))
+    LAYERS["screenui"].blit(font.render(f"tinychess {VERSION}", True, (0, 0, 0)), version_text_rect)
 
-    mouse_square = get_mouse_square(MOUSE, (100, 100))
+    mouse_square = get_mouse_square(MOUSE, (100, 100), FLIP_BOARD)
     if mouse_square is not None:
         render_text(LAYERS["screenui"], font, chess.square_name(mouse_square), (0, 0))
 
@@ -235,6 +310,18 @@ while running:
     screen.blit(LAYERS["screenui"], (0, 0))
 
     screen.blit(LAYERS["moves_rank"], (600, 0))
+
+    MENU_BUTTON.render()
+    MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
+
+    if game_over:
+        _, result = get_game_result(BOARD)
+        result_text = "game over: " + result
+
+        result_text_rect = font.render(result_text, True, (255, 255, 255)).get_rect(center=(400, 50))
+
+        pygame.draw.rect(screen, (0, 0, 0), result_text_rect.inflate(20, 20), border_radius=10)
+        screen.blit(font.render(result_text, True, (255, 255, 255)), result_text_rect)
 
     frame += 1
 

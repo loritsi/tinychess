@@ -1,9 +1,11 @@
 import pygame
 import traceback
 
-import shared
-
-colours = shared.colours
+colours = {
+    "black": (0, 0, 0),
+    "grey": (100, 100, 100),
+    "white": (255, 255, 255),
+}
 
 class Button:
     buttons = []
@@ -41,7 +43,7 @@ class Button:
             Button.buttons.remove(self) # delete the button 
 
     def render(self):
-        pygame.draw.rect(self.window, self.buttoncolour, self.buttonrect)   # draw the button's rectangle
+        pygame.draw.rect(self.window, self.buttoncolour, self.buttonrect, border_radius=10)   # draw the button's rectangle
         textsurf = self.buttonfont.render(self.text, True, self.textcolour) # render the text to surface
         textrect = textsurf.get_rect()                                      # get the rectangle of the text surface                
         textrect.center = (self.x + self.width/2, self.y + self.height/2)   # center the text rectangle in the button rectangle
