@@ -91,8 +91,8 @@ def get_captured_surfaces(board, flip):
         black_pieces.extend([piece_type] * count)
 
     if flip:
-        white_surface = render_piece_strip(white_pieces, "black")
-        black_surface = render_piece_strip(black_pieces, "white")
+        white_surface = render_piece_strip(black_pieces, "black")
+        black_surface = render_piece_strip(white_pieces, "white")
     else:
         white_surface = render_piece_strip(white_pieces, "white")
         black_surface = render_piece_strip(black_pieces, "black")
