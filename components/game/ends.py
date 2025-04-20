@@ -17,6 +17,3 @@ def get_game_result(board):
         return True, "draw by fivefold repetition"
     else:
         return True, "draw (other reason)"
-    
-
-

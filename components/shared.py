@@ -6,7 +6,7 @@ import sys
 BOARD = chess.Board()
 
 
-VERSION = "i1.2"
+VERSION = "i1.2.1"
 
 def resource_path(relative_path):
     # this works for dev and when using pyinstaller

@@ -115,7 +115,7 @@ def game_as_black(dummy):
     FLIP_BOARD = True
     SCREEN_MODE = "game"
     gen_next_move_flag = True
-    gen_next_move_timer = frame + random.randint(30, 120)
+    gen_next_move_timer = frame + random.randint(60, 300)
     clicking = False
     clicked = False
 
@@ -128,6 +128,31 @@ def go_menu(dummy):
     game_over = False
     clicking = False
     clicked = False
+
+def takeback(dummy):
+    global BOARD, gen_next_move_flag, gen_next_move_timer, clicking, clicked, game_over
+    if BOARD.move_stack:
+        BOARD.pop()
+        BOARD.pop()
+        gen_next_move_flag = False
+        gen_next_move_timer = 0
+    game_over = False
+    clicking = False
+    clicked = False
+    return
+
+TAKEBACK_BUTTON = Button(
+    text="takeback",
+    textcolour=(0, 0, 0),
+    window=screen,
+    buttonfont=font,
+    x= screen.get_width() - 225,
+    y= screen.get_height() - 110,
+    function=takeback,
+    args=None,
+    width=200,
+    height=50
+)
 
 WHITE_BUTTON = Button(
     text="play game as white",
@@ -215,6 +240,7 @@ while running:
         continue
 
     if SCREEN_MODE == "game_over": # forces only checking for menu button when game is over
+        #TAKEBACK_BUTTON.tick(MOUSE.get_pos(), clicking)
         MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
         clicked = False
         clicking = False
@@ -249,7 +275,7 @@ while running:
                         piece_moves = []
                         piece_move_squares = []
                         gen_next_move_flag = True
-                        gen_next_move_timer = frame + random.randint(30, 120)
+                        gen_next_move_timer = frame + random.randint(60, 300)
                         break
                 else:
                     sel_square = None
@@ -311,8 +337,16 @@ while running:
 
     screen.blit(LAYERS["moves_rank"], (600, 0))
 
+    #TAKEBACK_BUTTON.render()
+    #TAKEBACK_BUTTON.tick(MOUSE.get_pos(), clicking)
+
     MENU_BUTTON.render()
     MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
+
+    if gen_next_move_flag:
+        gen_next_move_text = font.render("thinking...", True, (255, 255, 255)).get_rect(center=(400, 50))
+        pygame.draw.rect(screen, (0, 0, 0), gen_next_move_text.inflate(20, 20), border_radius=10)
+        screen.blit(font.render("thinking...", True, (255, 255, 255)), gen_next_move_text)
 
     if game_over:
         _, result = get_game_result(BOARD)
