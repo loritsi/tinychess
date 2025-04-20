@@ -344,7 +344,7 @@ while running:
     MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
 
     if gen_next_move_flag:
-        gen_next_move_text = font.render("thinking...", True, (255, 255, 255)).get_rect(center=(400, 50))
+        gen_next_move_text = font.render("thinking...", True, (255, 255, 255)).get_rect(center=(650, 200))
         pygame.draw.rect(screen, (0, 0, 0), gen_next_move_text.inflate(20, 20), border_radius=10)
         screen.blit(font.render("thinking...", True, (255, 255, 255)), gen_next_move_text)
 
