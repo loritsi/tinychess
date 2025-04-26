@@ -6,7 +6,7 @@ import datetime
 import os
 import sys
 
-from components.shared import BOARD, LAYERS, MOUSE, SCREEN_MODE, FLIP_BOARD, VERSION
+from components.shared import BOARD, LAYERS, MOUSE, SCREEN_MODE, FLIP_BOARD, VERSION, PLAYER
 from components.render import render_board_bg, render_board, render_mouse_highlight, get_captured_surfaces, render_text, render_legal_moves
 from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
@@ -102,7 +102,8 @@ clicking = False
 clicked = False
 
 def game_as_white(dummy):
-    global SCREEN_MODE, FLIP_BOARD, clicking, clicked, gen_next_move_flag, gen_next_move_timer
+    global SCREEN_MODE, FLIP_BOARD, clicking, clicked, gen_next_move_flag, gen_next_move_timer, PLAYER
+    PLAYER = chess.WHITE
     gen_next_move_flag = False
     gen_next_move_timer = 0
     FLIP_BOARD = False
@@ -111,7 +112,8 @@ def game_as_white(dummy):
     clicked = False
 
 def game_as_black(dummy):
-    global SCREEN_MODE, FLIP_BOARD, gen_next_move_flag, gen_next_move_timer, clicking, clicked
+    global SCREEN_MODE, FLIP_BOARD, gen_next_move_flag, gen_next_move_timer, clicking, clicked, PLAYER
+    PLAYER = chess.BLACK
     FLIP_BOARD = True
     SCREEN_MODE = "game"
     gen_next_move_flag = True
@@ -130,13 +132,19 @@ def go_menu(dummy):
     clicked = False
 
 def takeback(dummy):
+    print("takeback clicked")
     global BOARD, gen_next_move_flag, gen_next_move_timer, clicking, clicked, game_over
-    if BOARD.move_stack:
+    if (BOARD.turn == PLAYER) and BOARD.move_stack and (BOARD.fullmove_number > 1):
+        # only allow takeback if the player is the one to move and there are moves to take back
         BOARD.pop()
         BOARD.pop()
         gen_next_move_flag = False
         gen_next_move_timer = 0
-    game_over = False
+        game_over = False
+    else:
+        print("takeback not allowed")
+        print("player:", PLAYER)
+        print("turn:", BOARD.turn)
     clicking = False
     clicked = False
     return
@@ -337,8 +345,8 @@ while running:
 
     screen.blit(LAYERS["moves_rank"], (600, 0))
 
-    #TAKEBACK_BUTTON.render()
-    #TAKEBACK_BUTTON.tick(MOUSE.get_pos(), clicking)
+    TAKEBACK_BUTTON.render()
+    TAKEBACK_BUTTON.tick(MOUSE.get_pos(), clicking)
 
     MENU_BUTTON.render()
     MENU_BUTTON.tick(MOUSE.get_pos(), clicking)

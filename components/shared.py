@@ -66,6 +66,8 @@ SCREEN_MODE = "menu"
 
 FLIP_BOARD = None
 
+PLAYER = None
+
 LAYERS = {}
 
 MOUSE = None
