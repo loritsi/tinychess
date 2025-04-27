@@ -1,8 +1,13 @@
 import chess
 import copy
 import random
+import statistics
 
 from components.shared import PIECES_VALUES_INVERSE, PIECES_VALUES
+from components.game.ends import is_draw
+
+MOVES_CONSIDERED = 0
+MOVES_DISCARDED = 0
 
 white_openings = [
     "e4", "d4", "Nf3", "c4", "f4", "b3"
@@ -35,6 +40,8 @@ def get_pieces(board, colour, mode="piece"):
     raise ValueError("invalid mode for get_pieces")
 
 def do_move(board):
+    global MOVES_CONSIDERED
+    MOVES_CONSIDERED = 0
     
     legal_moves = get_legal_moves(board)
     if not legal_moves:
@@ -56,8 +63,10 @@ def do_move(board):
 
     scored_moves = []
 
+    depth = 3
+
     for move in legal_moves:
-        score = get_move_goodness(board, move, me)
+        score = get_move_goodness(board, move, me, depth=depth, alpha=-10000, beta=10000, maximising=True)
         scored_moves.append((move, score))
 
     scored_moves.sort(key=lambda x: x[1], reverse=True) # sort by score
@@ -67,6 +76,8 @@ def do_move(board):
     best_moves = [move for move, score in scored_moves if score == best_score] # all moves with the best score
 
     move = random.choice(best_moves) # pick one of the best moves at random
+
+    print(f"considered {MOVES_CONSIDERED} moves this turn and discarded {MOVES_DISCARDED} moves (depth {depth})")
 
     return move, scored_moves
 
@@ -92,7 +103,42 @@ def position_is_repeat(board, move):
 
     return position in position_set # check if the position is in the set
 
-def get_move_goodness(board, move, colour):
+def get_board_eval(board, colour, depth, alpha, beta, maximising):
+    global MOVES_CONSIDERED, MOVES_DISCARDED
+    
+    if depth == 0:
+        return 0 
+    legal_moves = get_legal_moves(board)
+    if not legal_moves:
+        return 0
+    
+    
+    best_score = None
+    
+    for move in legal_moves:
+        goodness = get_move_goodness(board, move, board.turn, depth - 1, alpha, beta, not maximising)
+        MOVES_CONSIDERED += 1
+        if best_score is None:
+            best_score = goodness
+        elif maximising:
+            best_score = max(best_score, goodness)
+            alpha = max(alpha, best_score)
+        else:
+            best_score = min(best_score, goodness)
+            beta = min(beta, best_score)
+        if beta <= alpha:
+            MOVES_DISCARDED += 1
+            break # prune
+
+    if best_score is None:
+        return 0
+    
+    return best_score
+
+
+def get_move_goodness(board, move, colour, depth=2, alpha=-10000, beta=10000, maximising=True):
+
+    #print("thinking about move", move, "for", colour)
     score = 0
 
     imaginary_board = board.copy()
@@ -100,7 +146,6 @@ def get_move_goodness(board, move, colour):
 
     if position_is_repeat(board, move):
         score -= 2
-    
 
     opponent_check, opponent_checkmate, oppponent_stalemate = can_opponent_end_game(imaginary_board, move, colour)
     if opponent_checkmate:
@@ -169,6 +214,12 @@ def get_move_goodness(board, move, colour):
     if moves_into_centre(move):
         score += 2 # controlling the centre is good
 
+    if depth > 0:
+        eval = get_board_eval(imaginary_board, colour, depth - 1, alpha, beta, not maximising)
+        if eval is not None:
+            score += eval
+
+
     return score
 
 def value_of_pieces_hanging(board, colour):
@@ -221,7 +272,7 @@ def can_opponent_end_game(imaginary_board, move, colour):
             return True, True, False
         if double_imaginary_board.is_check():
             return True, False, False
-        if double_imaginary_board.is_stalemate():
+        if is_draw(double_imaginary_board):
             return False, False, True
     return False, False, False
 

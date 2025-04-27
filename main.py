@@ -12,6 +12,7 @@ from components.mouse import get_mouse_square
 from components.game.ends import get_game_result
 from components.game.engine import do_move
 from components.button import Button
+from components.thinkingthread import BackgroundTask
 
 def resource_path(relative_path):
     # this works for dev and when using pyinstaller
@@ -117,7 +118,7 @@ def game_as_black(dummy):
     FLIP_BOARD = True
     SCREEN_MODE = "game"
     gen_next_move_flag = True
-    gen_next_move_timer = frame + random.randint(60, 300)
+    gen_next_move_timer = frame + random.randint(60, 60)
     clicking = False
     clicked = False
 
@@ -201,14 +202,20 @@ MENU_BUTTON = Button(
     height=50
 )
 
+move_task = None
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+            if move_task:
+                move_task = None
             break
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
+            if move_task:
+                move_task = None
                 break
             elif event.key == pygame.K_b:
                 FLIP_BOARD = not FLIP_BOARD
@@ -260,12 +267,17 @@ while running:
         clicking = False
 
 
-    if gen_next_move_flag and gen_next_move_timer == frame and not game_over:
-        move, bote_moves = do_move(BOARD)
+    if gen_next_move_flag and gen_next_move_timer == frame and not game_over and not move_task:
+        move_task = BackgroundTask(do_move, BOARD)
+
+    if move_task and move_task.done:
+        move, bote_moves = move_task.result()
         if move is None:
+            move_task = None
             continue
         play_move_sound(BOARD, move, BOARD.turn == chess.WHITE)
         BOARD.push(move)
+        move_task = None
         gen_next_move_flag = False
             
 
@@ -283,7 +295,7 @@ while running:
                         piece_moves = []
                         piece_move_squares = []
                         gen_next_move_flag = True
-                        gen_next_move_timer = frame + random.randint(60, 300)
+                        gen_next_move_timer = frame + random.randint(60, 60)
                         break
                 else:
                     sel_square = None
@@ -351,7 +363,7 @@ while running:
     MENU_BUTTON.render()
     MENU_BUTTON.tick(MOUSE.get_pos(), clicking)
 
-    if gen_next_move_flag:
+    if gen_next_move_flag and not game_over:
         gen_next_move_text = font.render("thinking...", True, (255, 255, 255)).get_rect(center=(650, 200))
         pygame.draw.rect(screen, (0, 0, 0), gen_next_move_text.inflate(20, 20), border_radius=10)
         screen.blit(font.render("thinking...", True, (255, 255, 255)), gen_next_move_text)
