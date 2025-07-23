@@ -9,9 +9,11 @@ def render_board_bg(surface, flip):
     board_surf = pygame.Surface((8,8))
     for x in range(8):
         for y in range(8):
-            color = (222, 206, 237) if (x + y) % 2 == 0 else (94, 91, 140)
+            if flip:
+                color = (222, 206, 237) if (x + y) % 2 != 0 else (94, 91, 140)
+            else:
+                color = (222, 206, 237) if (x + y) % 2 == 0 else (94, 91, 140)
             board_surf.set_at((x, y), color)
-            
     square = min(surface.get_width(), surface.get_height())
     board_surf = pygame.transform.scale(board_surf, (square, square))
     surface.blit(board_surf, (0, 0))
