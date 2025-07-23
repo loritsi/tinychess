@@ -17,16 +17,3 @@ def get_game_result(board):
         return True, "draw by fivefold repetition"
     else:
         return True, "draw (other reason)"
-    
-
-def is_draw(board):
-    draw = False
-    if board.is_stalemate():
-        draw = True
-    elif board.is_insufficient_material():
-        draw = True
-    elif board.is_seventyfive_moves():
-        draw = True
-    elif board.is_fivefold_repetition():
-        draw = True
-    return draw
